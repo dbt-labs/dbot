@@ -82,7 +82,6 @@ class VectorStore:
         chosen_sections_len = 0
 
         for result in sorted(results, key=lambda x: x[1], reverse=True):
-            print(results)
             result_content = result[0].page_content.replace("\n", " ")
             if (
                 chosen_sections_len
