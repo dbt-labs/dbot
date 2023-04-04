@@ -10,18 +10,16 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 template = """
- Answer the question as truthfully as possible using the provided context, 
- and if the answer is not contained within the text below, say "I don't know."
+ Answer the question as truthfully as possible using the provided context, and assume 
+ that the question is about dbt, analytics engineering, or data. Prefer code snippets 
+ over prose where possible and relevant. 
+ If the answer is not contained within the text below, say "I don't know."\n
  \n
+ Context:\n
+ {context} \n
  \n
- Context:
- \n
- {context}
- \n
- \n
- Question:
- \n
- {question}
+ Question: \n
+  {question}
 """
 
 
@@ -37,4 +35,4 @@ class QuestionAnswerer:
         question = input("Ask a question: ")
         context = self.db.rank_and_truncate_documents(question)
         answer = self.llm(prompt.format(question=question, context=context))
-        print(answer)
+        return answer
