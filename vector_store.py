@@ -98,4 +98,5 @@ class VectorStore:
             chosen_sections["length"] += SEPARATOR_LEN + self.num_tokens_from_string(
                 result_content
             )
+
         return chosen_sections
