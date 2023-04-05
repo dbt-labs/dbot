@@ -30,6 +30,9 @@ class QuestionAnswerer:
 
     def answer_question(self, question: str):
         """Use the LLM to answer a question using the vector store as context."""
+        if not isinstance(question, str):
+            raise TypeError("Question must be a string")
+
         prompt = PromptTemplate(
             input_variables=["context", "question"], template=template
         )

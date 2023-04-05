@@ -49,7 +49,7 @@ class MarkdownSplitter:
             .replace(")", "")
             .replace(".", "")
             .replace("/", "")
-            .replace("&", "")
+            .replace("&", "and")
             .replace("`", "")
             .replace("“", "")
             .replace("”", "")
