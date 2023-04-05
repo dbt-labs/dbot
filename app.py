@@ -10,6 +10,7 @@ qa = QuestionAnswerer()
 
 # @stub.function
 def answer_question(question: str):
+    """Take a question from user input and return an answer from the LLM."""
     answer = qa.answer_question(question)
     print(answer)
 
