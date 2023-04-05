@@ -2,4 +2,7 @@ from markdown_splitter import MarkdownSplitter
 
 markdown_splitter = MarkdownSplitter()
 
-markdown_splitter.split_markdown("./docs/community/contributing/contributing-coding.md")
+sections = markdown_splitter.split_markdown(
+    "./mini-docs/guides/best-practices/materializations/materializations-guide-1-guide-overview.md"
+)
+print(sections)

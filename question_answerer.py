@@ -18,21 +18,35 @@ template = """
  Context:\n
  {context} \n
  \n
- Question: \n
+ Question: In dbt \n
   {question}
 """
 
 
 class QuestionAnswerer:
     def __init__(self):
-        self.llm = OpenAI(client=OPENAI_API_KEY, temperature=0.8)
-        self.db = VectorStore(name="dbt-docs", docs_loc="./docs")
+        self.llm = OpenAI(client=OPENAI_API_KEY, temperature=0)
+        self.vector_store = VectorStore(name="dbt-docs", docs_loc="./docs")
 
-    def answer_question(self) -> str:
+    def answer_question(self, question: str):
+        """Use the LLM to answer a question using the vector store as context."""
         prompt = PromptTemplate(
             input_variables=["context", "question"], template=template
         )
-        question = input("Ask a question: ")
-        context = self.db.rank_and_truncate_documents(question)
-        answer = self.llm(prompt.format(question=question, context=context))
+
+        chosen_sections = self.vector_store.choose_relevant_documents(question)
+        context = chosen_sections["content"]
+        sources = chosen_sections["source_links"]
+        question = prompt.format(question=question, context=context)
+
+        answer = self.llm(question)
+        answer_with_sources = self.append_source_links(sources, answer)
+
+        return answer_with_sources
+
+    def append_source_links(self, source_links: list, answer: str) -> str:
+        """Appends source links to the end of an answer."""
+        answer += "\n\nSources:"
+        for link in source_links:
+            answer += f"\n{link}"
         return answer
