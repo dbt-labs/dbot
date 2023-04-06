@@ -9,6 +9,7 @@ from markdown_splitter import MarkdownSplitter
 
 load_dotenv()
 
+
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
@@ -99,4 +100,5 @@ class VectorStore:
                 result_content
             )
 
+        return chosen_sections
         return chosen_sections

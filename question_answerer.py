@@ -1,13 +1,12 @@
 import os
 
 from dotenv import load_dotenv
-from langchain import OpenAI, PromptTemplate
-
-from vector_store import VectorStore
 
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+from vector_store import VectorStore
 
 template = """
  Answer the question as truthfully as possible using the provided context, and assume 
@@ -25,6 +24,9 @@ template = """
 
 class QuestionAnswerer:
     def __init__(self):
+        OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+        from langchain import OpenAI
+
         self.llm = OpenAI(client=OPENAI_API_KEY, temperature=0)
         self.vector_store = VectorStore(name="dbt-docs", docs_loc="./docs")
 
@@ -32,6 +34,8 @@ class QuestionAnswerer:
         """Use the LLM to answer a question using the vector store as context."""
         if not isinstance(question, str):
             raise TypeError("Question must be a string")
+
+        from langchain import PromptTemplate
 
         prompt = PromptTemplate(
             input_variables=["context", "question"], template=template
@@ -52,4 +56,6 @@ class QuestionAnswerer:
         answer += "\n\nSources:"
         for link in source_links:
             answer += f"\n{link}"
+        return answer
+        return answer
         return answer

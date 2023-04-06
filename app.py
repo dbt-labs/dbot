@@ -1,20 +1,17 @@
-# import modal
+from fastapi import FastAPI
 
 from question_answerer import QuestionAnswerer
 
-# stub = modal.Stub(name="question_answerer")
-
-
 qa = QuestionAnswerer()
+app = FastAPI()
 
 
-# @stub.function
-def answer_question(question: str):
-    """Take a question from user input and return an answer from the LLM."""
-    answer = qa.answer_question(question)
-    print(answer)
+@app.get("/answer")
+def get_answer(question: str = "What is dbt?"):
+    return {"answer": qa.answer_question(question)}
 
 
 if __name__ == "__main__":
-    question = input("Ask a question: ")
-    answer_question(question)
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)
