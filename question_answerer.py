@@ -2,11 +2,12 @@ import os
 
 from dotenv import load_dotenv
 
+from vector_store import VectorStore
+
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-from vector_store import VectorStore
 
 template = """
  Answer the question as truthfully as possible using the provided context, and assume 
@@ -28,7 +29,9 @@ class QuestionAnswerer:
         from langchain import OpenAI
 
         self.llm = OpenAI(client=OPENAI_API_KEY, temperature=0)
-        self.vector_store = VectorStore(name="dbt-docs", docs_loc="./docs")
+        self.vector_store = VectorStore(
+            name="qa-db", sources_path="./context-sources", reindex=True
+        )
 
     def answer_question(self, question: str):
         """Use the LLM to answer a question using the vector store as context."""
@@ -56,6 +59,4 @@ class QuestionAnswerer:
         answer += "\n\nSources:"
         for link in source_links:
             answer += f"\n{link}"
-        return answer
-        return answer
         return answer

@@ -1,58 +1,96 @@
 import os
+from typing import List
 
 import tiktoken
 from dotenv import load_dotenv
+from halo import Halo
+from langchain.docstore.document import Document
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.vectorstores import Chroma
 
-from markdown_splitter import MarkdownSplitter
+from code_crawler import CodeCrawler
+from csv_crawler import CSVCrawler
+from markdown_crawler import MarkdownCrawler
 
 load_dotenv()
 
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
+spinner = Halo(text="Loading", spinner="dots")
+
 
 class VectorStore:
-    def __init__(self, name: str, docs_loc: str) -> None:
+    def __init__(
+        self,
+        name: str,
+        sources_path: str,
+        reindex: bool,
+    ) -> None:
         embedder = OpenAIEmbeddings(client=OPENAI_API_KEY)
-        self.initialize_db(name, docs_loc, embedder)
+        self.initialize_db(
+            name,
+            sources_path,
+            embedder,
+            reindex,
+        )
 
-    def initialize_db(self, name: str, docs_loc: str, embedder: OpenAIEmbeddings):
+    def initialize_db(
+        self,
+        name: str,
+        sources_path: str,
+        embedder: OpenAIEmbeddings,
+        reindex: bool,
+    ):
         """Initialize a new vector store or load an existing one."""
         if not os.path.exists(f"./{name}"):
             os.makedirs(f"./{name}")
-        self.database = Chroma(
+        self.database: Chroma = Chroma(
             persist_directory=f"./{name}", embedding_function=embedder
         )
-        if os.listdir(f"./{name}") == []:
-            print(f"🔮 Initialized new vector store {name}")
-            self.add_docs(name, docs_loc, embedder)
-            print(f"✅ Added embeddings for all docs in {docs_loc} to vector store")
-        else:
-            print(f"🔮 Loaded existing vector store {name}")
+        if reindex:
+            self.add_docs(name, sources_path, embedder)
 
-    def add_docs(self, name: str, docs_path: str, embedder: OpenAIEmbeddings):
-        """Add all docs in a directory to the vector store."""
-        for root, dir_names, file_names in os.walk(docs_path):
-            for f in file_names:
-                item_path = os.path.join(root, f)
-                if f.endswith(".md"):
-                    markdown_splitter = MarkdownSplitter()
-                    docs = markdown_splitter.create_documents(item_path)
-                    for doc in docs:
-                        self.database.add_documents([doc])
-                        print(
-                            f"🌱 Added {doc.metadata['source']}#{doc.metadata['slug']}"
-                        )
-            print(f"🕸️ Embeddings for docs in {root} directory added to vector store")
+    def add_docs(self, db_name: str, sources_path: str, embedder: OpenAIEmbeddings):
+        """Add a collection of split chunks to the vector store as Documents."""
+
+        if not os.path.exists(sources_path):
+            print(f"Directory {sources_path} does not exist.")
+            return
+
+        crawlers: List = [
+            MarkdownCrawler(sources_path),
+            CodeCrawler(sources_path),
+            CSVCrawler(sources_path),
+        ]
+
+        docs: List[Document] = []
+        for crawler in crawlers:
+            docs.extend(crawler.crawl_and_make_docs())
+
+        spinner.start(f"Adding documents to vector store {db_name}")
+        self.database.add_documents(docs)
+        spinner.succeed(f"Added documents to vector store {db_name}")
+
+        # will this update the existing document if the id is the same?
+        # this is a hack to avoid hitting the embeddings API
+        # for documents that are already in the database
+        # loop over docs and do this check? or filter docs to just ids
+        # that don't get returned?
+        # for doc in tqdm(docs, desc=f"Adding documents to {db_name}"):
+        #     self.database.add_documents([doc])
+        # if self.database._collection.get(
+        #     ids=[id],
+        # ):
+        #     continue
+        # else:
 
     def num_tokens_from_string(
         self, string: str, encoding_name: str = "cl100k_base"
     ) -> int:
         """Returns the number of tokens in a text string."""
         encoding = tiktoken.get_encoding(encoding_name)
-        num_tokens = len(encoding.encode(string))
+        num_tokens: int = len(encoding.encode(string))
         return num_tokens
 
     def get_similar_documents(self, question: str):
@@ -62,13 +100,15 @@ class VectorStore:
 
     def format_source_links(self, source: str) -> str:
         """Formats a file path into a  source link on the dbt docs site."""
+        # TODO: build this out to handle other types of sources now that we have them
         return source.replace("./docs", "https://docs.getdbt.com").replace(".md", "")
 
     def choose_relevant_documents(self, question: str, max_tokens: int = 3000):
         """Chooses relevant documents to answer a question within a max_tokens limit."""
-        SEPARATOR = "\n* "
-        SEPARATOR_LEN = 3
+        SEPARATOR: str = "\n* "
+        SEPARATOR_LEN: int = 3
         results = self.get_similar_documents(question)
+        # TODO: make a TypedDict for this
         chosen_sections = {
             "content": "",
             "source_links": [],
@@ -80,7 +120,6 @@ class VectorStore:
             result_content = result_data.page_content.replace("\n", " ")
             result_source = result_data.metadata["source"]
             result_source_link = self.format_source_links(result_source)
-            result_slug = result_data.metadata["slug"]
 
             if (
                 chosen_sections["length"]
@@ -92,13 +131,10 @@ class VectorStore:
 
             chosen_sections["content"] += SEPARATOR + result_content
 
-            chosen_sections["source_links"].append(
-                f"{result_source_link}#{result_slug}"
-            )
+            chosen_sections["source_links"].append(f"{result_source_link}")
 
             chosen_sections["length"] += SEPARATOR_LEN + self.num_tokens_from_string(
                 result_content
             )
 
-        return chosen_sections
         return chosen_sections
