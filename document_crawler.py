@@ -18,3 +18,8 @@ class DocumentCrawler:
     def hash_string(self, string: str) -> str:
         """Creates an md5 hash from a string."""
         return hashlib.md5(string.encode()).hexdigest()
+
+    @abstractmethod
+    def make_source_link(self, source: str) -> str:
+        """Creates a link to the source file from the Document source property."""
+        pass

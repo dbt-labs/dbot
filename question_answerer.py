@@ -24,13 +24,13 @@ template = """
 
 
 class QuestionAnswerer:
-    def __init__(self):
+    def __init__(self, sources_path: str = "./context-sources"):
         OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
         from langchain import OpenAI
 
         self.llm = OpenAI(client=OPENAI_API_KEY, temperature=0)
         self.vector_store = VectorStore(
-            name="qa-db", sources_path="./context-sources", reindex=True
+            name="qa-db", sources_path=sources_path, reindex=True
         )
 
     def answer_question(self, question: str):

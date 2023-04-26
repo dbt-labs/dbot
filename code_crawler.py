@@ -40,10 +40,14 @@ class CodeCrawler(DocumentCrawler):
                     Document(
                         page_content=chunk,
                         metadata={
-                            "id": self.hash_string(f"{filename}{raw_chunk}"),
+                            "id": self.hash_string(f"{filename}{chunk}"),
                             "source": filename,
                         },
                     )
                 )
 
         return docs
+
+    def make_source_link(self, source: str) -> str:
+        """Creates a link to the source file from the Document source property."""
+        return f"https://github.com/dbt-labs/jaffle-shop-template/blob/main/{source}"

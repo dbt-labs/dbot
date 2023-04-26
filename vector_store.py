@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, TypedDict
 
 import tiktoken
 from dotenv import load_dotenv
@@ -18,6 +18,14 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 spinner = Halo(text="Loading", spinner="dots")
+
+
+class ChosenSections(TypedDict):
+    """The composed context of document sections chosen to answer a question."""
+
+    content: str
+    source_links: List[str]
+    length: int
 
 
 class VectorStore:
@@ -98,18 +106,12 @@ class VectorStore:
         results = self.database.similarity_search_with_score(question)
         return results
 
-    def format_source_links(self, source: str) -> str:
-        """Formats a file path into a  source link on the dbt docs site."""
-        # TODO: build this out to handle other types of sources now that we have them
-        return source.replace("./docs", "https://docs.getdbt.com").replace(".md", "")
-
     def choose_relevant_documents(self, question: str, max_tokens: int = 3000):
         """Chooses relevant documents to answer a question within a max_tokens limit."""
         SEPARATOR: str = "\n* "
         SEPARATOR_LEN: int = 3
         results = self.get_similar_documents(question)
-        # TODO: make a TypedDict for this
-        chosen_sections = {
+        chosen_sections: ChosenSections = {
             "content": "",
             "source_links": [],
             "length": 0,
@@ -119,7 +121,6 @@ class VectorStore:
             result_data = result[0]
             result_content = result_data.page_content.replace("\n", " ")
             result_source = result_data.metadata["source"]
-            result_source_link = self.format_source_links(result_source)
 
             if (
                 chosen_sections["length"]
@@ -131,7 +132,7 @@ class VectorStore:
 
             chosen_sections["content"] += SEPARATOR + result_content
 
-            chosen_sections["source_links"].append(f"{result_source_link}")
+            chosen_sections["source_links"].append(f"{result_source}")
 
             chosen_sections["length"] += SEPARATOR_LEN + self.num_tokens_from_string(
                 result_content

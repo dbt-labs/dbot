@@ -51,3 +51,8 @@ class MarkdownCrawler(DocumentCrawler):
                 )
 
         return docs
+
+    def make_source_link(self, source: str) -> str:
+        """Creates a link to the source file from the Document source property."""
+        source = source.replace(".md", "")
+        return f"https://docs.getdbt.com/{source}"

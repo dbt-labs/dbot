@@ -30,6 +30,16 @@ class CSVCrawler(DocumentCrawler):
 
     def split_file_into_docs(self, filename) -> List[Document]:
         """Splits a markdown file into a list of chunks with metadata."""
-        docs = CSVLoader(filename).load()
+        docs = CSVLoader(filename, source_column="topic_id").load()
+
+        for doc in docs:
+            doc.metadata["id"] = self.hash_string(
+                f"{doc.metadata['source']}{doc.page_content}"
+            )
 
         return docs
+
+    def make_source_link(self, source: str) -> str:
+        """Creates a link to the source file from the Document source property."""
+        source = source.replace(".csv", "")
+        return f"https://discourse.getdbt.com/t/{source}"
