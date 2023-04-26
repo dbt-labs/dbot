@@ -4,4 +4,3 @@ __pycache__
 .pytest_cache
 .vscode
 qa-db
-qa-db/*
